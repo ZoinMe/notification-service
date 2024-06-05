@@ -3,15 +3,27 @@ version: '3'
 services:
   producer:
     container_name: producer
-    image: producer:latest
-    # build:
-    #   context: .
-    #   dockerfile: producer/Dockerfile
+    build:
+      context: .
+      dockerfile: producer/Dockerfile
     depends_on:
       - kafka
     restart: on-failure
     ports:
       - "6061:6061"
+    networks:
+      - kafka-network
+
+  consumer:
+    container_name: consumer
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+    depends_on:
+      - kafka
+    restart: on-failure
+    ports:
+      - "6062:6062"
     networks:
       - kafka-network
 

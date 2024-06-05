@@ -9,9 +9,27 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Comment struct represents a comment or notification.
+type RequestStatus string
+
+const (
+	StatusPending  RequestStatus = "Pending"
+	StatusApproved RequestStatus = "Approved"
+	StatusRejected RequestStatus = "Rejected"
+)
+
+type Request struct {
+	ID     int64         `json:"id"`
+	UserID int64         `json:"user_id"`
+	TeamID int64         `json:"team_id"`
+	Status RequestStatus `json:"status"`
+}
+
 type Comment struct {
-	Text string `json:"text"`
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"user_id"`
+	TeamID   int64  `json:"team_id"`
+	Text     string `json:"text"`
+	ParentID *int64 `json:"parent_id"`
 }
 
 func main() {
@@ -20,9 +38,8 @@ func main() {
 	api := app.Group("/api/v1") // /api/v1
 
 	// Define separate endpoints for each type of notification
-	api.Post("/join-team", joinTeam)
-	api.Post("/comment-post", commentPost)
-	api.Post("/comment-comment", commentComment)
+	api.Post("/request", request)
+	api.Post("/comment", comment)
 
 	// Start server
 	log.Fatal(app.Listen(":6061"))
@@ -66,24 +83,54 @@ func PushCommentToQueue(topic string, message []byte) error {
 	return nil
 }
 
-// joinTeam handles notifications for users joining a team.
-func joinTeam(c *fiber.Ctx) error {
-	return handleNotification(c, "team_notifications")
+func request(c *fiber.Ctx) error {
+	return handleRequest(c, "request")
 }
 
-// commentPost handles notifications for users commenting on a post.
-func commentPost(c *fiber.Ctx) error {
-	return handleNotification(c, "post_notifications")
+func comment(c *fiber.Ctx) error {
+	return handleComment(c, "comment")
 }
 
-// commentComment handles notifications for users commenting on a comment.
-func commentComment(c *fiber.Ctx) error {
-	return handleNotification(c, "comment_notifications")
+func handleRequest(c *fiber.Ctx, topic string) error {
+	req := new(Request)
+
+	// Parse body into comment struct
+	if err := c.BodyParser(req); err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusBadRequest).JSON(&fiber.Map{
+			"success": false,
+			"message": "Invalid request body",
+		})
+	}
+
+	// Convert comment to bytes and send it to Kafka
+	cmtInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(&fiber.Map{
+			"success": false,
+			"message": "Failed to marshal comment",
+		})
+	}
+
+	err = PushCommentToQueue(topic, cmtInBytes)
+	if err != nil {
+		log.Println(err)
+		return c.Status(fiber.StatusInternalServerError).JSON(&fiber.Map{
+			"success": false,
+			"message": "Failed to push comment to queue",
+		})
+	}
+
+	// Return Comment in JSON format
+	return c.JSON(&fiber.Map{
+		"success": true,
+		"message": "Comment pushed successfully",
+		"comment": req,
+	})
 }
 
-// handleNotification is a helper function to process notifications.
-func handleNotification(c *fiber.Ctx, topic string) error {
-	// Instantiate new Comment struct
+func handleComment(c *fiber.Ctx, topic string) error {
 	cmt := new(Comment)
 
 	// Parse body into comment struct

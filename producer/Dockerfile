@@ -1,6 +1,6 @@
 FROM golang:1.21.6-alpine AS builder
 WORKDIR /app
-COPY . .
+COPY /producer .
 RUN go mod tidy
 RUN go build -o main .
 FROM alpine:latest

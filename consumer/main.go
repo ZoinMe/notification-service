@@ -16,35 +16,29 @@ type MessageProcessor struct{}
 
 func (p *MessageProcessor) ProcessMessage(topic string, message *sarama.ConsumerMessage) {
 	switch topic {
-	case "team_notifications":
-		p.handleTeamNotifications(message)
-	case "post_notifications":
-		p.handlePostNotifications(message)
-	case "comment_notifications":
-		p.handleCommentNotifications(message)
+	case "request":
+		p.handleRequest(message)
+	case "comment":
+		p.handleComment(message)
 	default:
 		fmt.Printf("Unknown topic: %s\n", topic)
 	}
 }
 
-func (p *MessageProcessor) handleTeamNotifications(message *sarama.ConsumerMessage) {
-	fmt.Printf("Received team notification: %s\n", string(message.Value))
+func (p *MessageProcessor) handleRequest(message *sarama.ConsumerMessage) {
+	fmt.Printf("Received Request: %s\n", string(message.Value))
 }
 
-func (p *MessageProcessor) handlePostNotifications(message *sarama.ConsumerMessage) {
-	fmt.Printf("Received post notification: %s\n", string(message.Value))
-}
-
-func (p *MessageProcessor) handleCommentNotifications(message *sarama.ConsumerMessage) {
-	fmt.Printf("Received comment notification: %s\n", string(message.Value))
+func (p *MessageProcessor) handleComment(message *sarama.ConsumerMessage) {
+	fmt.Printf("Received Comment: %s\n", string(message.Value))
 }
 
 func main() {
 	// Kafka broker addresses
-	brokers := []string{"localhost:29092"}
+	brokers := []string{"kafka:9092"}
 
 	// Kafka topics to consume
-	topics := []string{"team_notifications", "post_notifications", "comment_notifications"}
+	topics := []string{"request", "comment"}
 
 	// Create new consumer group
 	config := sarama.NewConfig()
