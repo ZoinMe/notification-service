@@ -9,19 +9,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type RequestStatus string
-
-const (
-	StatusPending  RequestStatus = "Pending"
-	StatusApproved RequestStatus = "Approved"
-	StatusRejected RequestStatus = "Rejected"
-)
-
 type Request struct {
-	ID     int64         `json:"id"`
-	UserID int64         `json:"user_id"`
-	TeamID int64         `json:"team_id"`
-	Status RequestStatus `json:"status"`
+	Id     int64  `json:"id"`
+	UserId int64  `json:"user_id"`
+	TeamId int64  `json:"team_id"`
+	Status string `json:"status"`
 }
 
 type Comment struct {
@@ -42,7 +34,7 @@ func main() {
 	api.Post("/comment", comment)
 
 	// Start server
-	log.Fatal(app.Listen(":6061"))
+	log.Fatal(app.Listen(":6090"))
 }
 
 // ConnectProducer connects to Kafka and returns a synchronous producer.
@@ -62,7 +54,7 @@ func ConnectProducer(brokersUrl []string) (sarama.SyncProducer, error) {
 
 // PushCommentToQueue sends a comment message to the Kafka topic.
 func PushCommentToQueue(topic string, message []byte) error {
-	brokersUrl := []string{"kafka:9092"} // Use the default Kafka port 9092
+	brokersUrl := []string{"localhost:29092"} // Use the default Kafka port 9092
 	producer, err := ConnectProducer(brokersUrl)
 	if err != nil {
 		return err
